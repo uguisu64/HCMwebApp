@@ -41,16 +41,13 @@
 			if (cols.length !== numClusters + 3) return;
 			const x = parseFloat(cols[0]);
 			const y = parseFloat(cols[1]);
-			let clusterId = 0;
+			const clusterMembership = []
 			for (let i = 0; i < numClusters; i++) {
-				if (parseInt(cols[i + 2]) === 1) {
-					clusterId = i + 1;
-					break;
-				}
+				clusterMembership.push(parseFloat(cols[i + 2]))
 			}
 			xCoords.add(x);
 			yCoords.add(y);
-			points.push({ x, y, clusterId });
+			points.push({ x, y, clusterMembership });
 		});
 
 		const sortedX = Array.from(xCoords).sort((a, b) => a - b);
@@ -61,16 +58,18 @@
 			zDataByCluster.push(Array(sortedY.length).fill(null).map(() => Array(sortedX.length).fill(0)));
 		}
 		points.forEach((p) => {
-			if (p.clusterId > 0) {
-				zDataByCluster[p.clusterId - 1][sortedY.indexOf(p.y)][sortedX.indexOf(p.x)] = 1;
-			}
+			p.clusterMembership.forEach((membership, i) => {
+				zDataByCluster[i][sortedY.indexOf(p.y)][sortedX.indexOf(p.x)] = membership
+			})
 		});
 
 		const newSurfaceTraces = [];
 		for (let i = 0; i < numClusters; i++) {
 			const color = colorPalette[i % colorPalette.length];
 			newSurfaceTraces.push({
-				x: sortedX, y: sortedY, z: zDataByCluster[i],
+				x: sortedX,
+				y: sortedY,
+				z: zDataByCluster[i],
 				type: 'surface', name: `Cluster ${i + 1}`,
 				colorscale: [[0, color], [1, color]], showscale: false
 			});
