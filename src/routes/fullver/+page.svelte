@@ -165,8 +165,9 @@
     }
 
     $effect(async() => {
-        settingObject
-        results = await generateData()
+        if (settingObject.length < 1) { return }
+        JSON.stringify(settingObject)
+        results = await generateData(settingObject)
         fileContent = createDataFileContent()
     })
 
@@ -179,7 +180,7 @@
 		})
 	})
 
-    async function generateData() {
+    async function generateData(settingObject) {
         const res = await Promise.all(settingObject.map(async(obj, i) => {
             if (obj.type === "makeblob") {
                 let context = pyodideInstance.toPy(obj.state)
