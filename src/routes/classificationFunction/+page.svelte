@@ -65,53 +65,57 @@
 
 		const newSurfaceTraces = [];
 		for (let i = 0; i < numClusters; i++) {
-			const color = colorPalette[i % colorPalette.length];
+			const color = colorPalette[i % colorPalette.length]
 			newSurfaceTraces.push({
 				x: sortedX,
 				y: sortedY,
 				z: zDataByCluster[i],
 				type: 'surface', name: `Cluster ${i + 1}`,
 				colorscale: [[0, color], [1, color]], showscale: false
-			});
+			})
 		}
 		
-		surfaceTraces = newSurfaceTraces; // ★変更点: surfaceTracesを更新
-		plotLayout.title = `クラスタリングの決定領域 (${numClusters}クラスタ)`;
+		surfaceTraces = newSurfaceTraces
+		plotLayout.title = `クラスタリングの決定領域 (${numClusters}クラスタ)`
 	}
 
 	function handlePointsFile(event) {
-		const file = event.target.files[0];
-		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = (e) => parsePointsFile(e.target.result);
-		reader.readAsText(file);
+		const file = event.target.files[0]
+		if (!file) return
+		const reader = new FileReader()
+		reader.onload = (e) => parsePointsFile(e.target.result)
+		reader.readAsText(file)
 	}
 
 
 	function parsePointsFile(text) {
-		const pointsByCluster = new Map();
-		const lines = text.trim().split('\n');
+		const pointsByCluster = new Map()
+		const lines = text.trim().split('\n')
 		
 		lines.forEach(line => {
-			const cols = line.trim().split(/\s+/);
-			if (cols.length < 3) return;
+			const cols = line.trim().split(/\s+/)
+			if (cols.length < 3) return
 			
-			const point = { x: parseFloat(cols[0]), y: parseFloat(cols[1]) };
-			let clusterId = 0;
+			const point = { x: parseFloat(cols[0]), y: parseFloat(cols[1]) }
+			let clusterId = 0
+			let tmpmax = cols[2]
+			let tmpindex = 2
 			for (let i = 2; i < cols.length; i++) {
-				if (parseInt(cols[i]) === 1) {
-					clusterId = i - 1; // IDを1から始まるように調整
-					break;
+				if (cols[i] > tmpmax) {
+					tmpmax = cols[i]
+					tmpindex = i
 				}
 			}
+			point["z"] = tmpmax
+			point["clusterId"] = tmpindex
 
 			if (!pointsByCluster.has(clusterId)) {
-				pointsByCluster.set(clusterId, { x: [], y: [], z: [] });
+				pointsByCluster.set(clusterId, { x: [], y: [], z: [] })
 			}
-			const clusterData = pointsByCluster.get(clusterId);
-			clusterData.x.push(point.x);
-			clusterData.y.push(point.y);
-			clusterData.z.push(1.05); // Z=1の平面より少し上に点を描画
+			const clusterData = pointsByCluster.get(clusterId)
+			clusterData.x.push(point.x)
+			clusterData.y.push(point.y)
+			clusterData.z.push(point.z)
 		});
 		
 		const newScatterTraces = [];
@@ -129,9 +133,9 @@
 						width: 1
 					}
 				}
-			});
+			})
 		}
-		scatterTraces = newScatterTraces;
+		scatterTraces = newScatterTraces
 	}
 
 	$effect(() => {
