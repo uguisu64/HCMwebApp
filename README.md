@@ -1,38 +1,58 @@
-# sv
+# HCMWebApp
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+このリポジトリは、クラスタリングに関する授業で作成されたWebアプリケーションです。SvelteKitとPyodide、WebAssembly (Wasm) を利用して、ブラウザ上でクラスタリングアルゴリズム（特にHCM: Hard C-Means）を実行し、その結果を可視化します。
 
-## Creating a project
+## 機能
 
-If you're seeing this, you've probably already done this step. Congrats!
+-   **クラスタリングアルゴリズムの実行**: ブラウザ上でPythonのクラスタリングアルゴリズム（HCMなど）を実行します。
+-   **結果の可視化**: クラスタリング結果をグラフや図で分かりやすく表示します。
+-   **インタラクティブな操作**: ユーザーがパラメータを変更し、リアルタイムで結果を確認できます。
 
-```bash
-# create a new project in the current directory
-npx sv create
+## 技術スタック
 
-# create a new project in my-app
-npx sv create my-app
-```
+-   **SvelteKit**: 高速でモダンなWebアプリケーション開発のためのフレームワーク。
+-   **Pyodide**: WebAssemblyを通じてブラウザ上でPythonコードを実行するためのプロジェクト。
+-   **WebAssembly (Wasm)**: 高性能なクライアントサイドアプリケーションを実現するためのバイナリ命令フォーマット。Pythonのクラスタリングロジックを効率的に実行するために使用されます。
+-   **Plotly.js**: インタラクティブなグラフ描画ライブラリ。
 
-## Developing
+## セットアップ
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+このプロジェクトをローカルで実行するには、以下の手順に従ってください。
 
-```bash
-npm run dev
+1.  **リポジトリのクローン**:
+    ```bash
+    git clone https://github.com/your-username/HCMWebApp.git
+    cd HCMWebApp
+    ```
+2.  **依存関係のインストール**:
+    ```bash
+    npm install
+    ```
+3.  **開発サーバーの起動**:
+    ```bash
+    npm run dev
+    ```
+    ブラウザで `http://localhost:5173` (または表示されたポート) にアクセスすると、アプリケーションが表示されます。
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## ビルドとデプロイ
 
-## Building
-
-To create a production version of your app:
+プロダクション用にアプリケーションをビルドするには：
 
 ```bash
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+ビルドされたアプリケーションは `build` ディレクトリに出力されます。静的ホスティングサービスにデプロイする場合は、`@sveltejs/adapter-static` を使用しているため、このディレクトリの内容をアップロードしてください。
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## ディレクトリ構造
+
+-   `src/routes/`: SvelteKitのルーティングとページコンポーネントが含まれます。
+    -   `+page.svelte`: メインページ。
+    -   `classificationFunction/`: クラスタリング機能に関連するページ。
+    -   `executeClustering/`: クラスタリング実行に関連するページ。
+    -   `fullver/`: 完全版の機能に関連するページ。
+-   `src/lib/`: 再利用可能なコンポーネントやユーティリティ関数が含まれます。
+    -   `loadPyodide.js`: Pyodideのロードと初期化に関するロジック。
+    -   `pythonCodes.js`: ブラウザで実行されるPythonコード。
+    -   `wasm/`: WebAssemblyモジュール（`hcm.wasm`, `sfcm.wasm`など）が含まれます。
+-   `static/`: 静的アセット（`favicon.png`など）が含まれます。
