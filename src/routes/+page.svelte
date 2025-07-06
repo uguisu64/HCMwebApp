@@ -31,6 +31,13 @@
             <a href="./fullver" class="card-button">ツールへ</a>
         </div>
 
+        <div class="feature-card">
+            <span class="icon">🧪</span>
+            <h3>Check Clustering</h3>
+            <p>クラスタリング結果を正解ラベルと比較し、ARI (Adjusted Rand Index) などの評価指標を確認できます。</p>
+            <a href="./checkClustering" class="card-button">ツールへ</a>
+        </div>
+
     </main>
 
     <section class="tech-stack">
