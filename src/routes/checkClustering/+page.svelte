@@ -10,34 +10,32 @@
     let checkFcmModule = $state()
     let checkFcmIsReady = $state(false)
     let fileContent = $state()
-    let groundTruthFileContent = $state() // New state for ground truth file
+    let groundTruthFileContent = $state()
     let membershipText = $state()
     let resultCentersText = $state()
-    let ariTableText = $state() // New state for ARI table output
+    let contingencyTable = $state([])
+    let ariScore = $state(null)
+    let rawAriOutput = $state('')
     let numClusters = $state(2)
     let fuzzifier = $state(2.0)
     let downloadFileNameMem = $state()
     let downloadFileNameCen = $state()
-    let stdoutBuffer = $state(''); // Make it a state variable to be reactive
+    let stdoutBuffer = $state('');
 
     onMount(async() => {
         checkHcmModule = await CheckHcmModuleFactory({
             locateFile: (path, scriptDirectory) => {
-                if (path.endsWith('.wasm')) {
-                    return checkHcmWasmUrl
-                }
+                if (path.endsWith('.wasm')) return checkHcmWasmUrl
                 return scriptDirectory + path
             },
-            print: (text) => { stdoutBuffer += text + '\n'; }, // Pass custom print function
-            printErr: (text) => { stdoutBuffer += text + '\n'; } // Also for stderr
+            print: (text) => { stdoutBuffer += text + '\n'; },
+            printErr: (text) => { stdoutBuffer += text + '\n'; }
         });
         checkHcmIsReady = true
 
         checkFcmModule = await CheckFcmModuleFactory({
             locateFile: (path, scriptDirectory) => {
-                if (path.endsWith('.wasm')) {
-                    return checkFcmWasmUrl
-                }
+                if (path.endsWith('.wasm')) return checkFcmWasmUrl
                 return scriptDirectory + path
             },
             print: (text) => { stdoutBuffer += text + '\n'; },
@@ -45,6 +43,42 @@
         })
         checkFcmIsReady = true
     });
+
+    function parseAriOutput(output) {
+        const lines = output.split('\n');
+        let rawTable = [];
+        let score = null;
+        let parsingTable = false;
+
+        for (const line of lines) {
+            if (line.startsWith('Contingency Table:')) {
+                parsingTable = true;
+                continue;
+            }
+            if (line.startsWith('ARI:')) {
+                parsingTable = false;
+                score = parseFloat(line.replace('ARI:', '').trim());
+                continue;
+            }
+            if (parsingTable && line.trim()) {
+                const row = line.replace(/[()]/g, '').trim().split(',').map(s => s.trim()).filter(s => s).map(s => parseInt(s, 10));
+                if (row.length > 0) {
+                    rawTable.push(row);
+                }
+            }
+        }
+
+        if (rawTable.length > 1) {
+            // Exclude last row (totals)
+            const tableWithoutTotals = rawTable.slice(0, -1);
+            // Exclude last column (totals) from each remaining row
+            contingencyTable = tableWithoutTotals.map(row => row.slice(0, -1));
+        } else {
+            contingencyTable = [];
+        }
+
+        ariScore = score;
+    }
 
     async function executeHcm() {
         if (!checkHcmIsReady || !fileContent || !groundTruthFileContent) {
@@ -58,12 +92,16 @@
         checkHcmModule.FS.writeFile(inputFilename, fileContent)
         checkHcmModule.FS.writeFile(groundTruthFilename, groundTruthFileContent)
 
-        stdoutBuffer = ''; // Clear buffer before execution
+        stdoutBuffer = '';
+        contingencyTable = [];
+        ariScore = null;
 
         console.log("Executing Check HCM...")
         checkHcmModule.callMain([inputFilename, groundTruthFilename, String(numClusters)])
         console.log("Execution finished.")
-        ariTableText = stdoutBuffer; // Assign captured stdout to ariTableText
+        
+        rawAriOutput = stdoutBuffer;
+        parseAriOutput(stdoutBuffer);
 
         const resultMembershipFilename = `HCM-${inputFilename.split('.')[0]}.result_membership`
         const resultCentersFilename = `HCM-${inputFilename.split('.')[0]}.result_centers`
@@ -93,12 +131,16 @@
         checkFcmModule.FS.writeFile(inputFilename, fileContent)
         checkFcmModule.FS.writeFile(groundTruthFilename, groundTruthFileContent)
         
-        stdoutBuffer = ''; // Clear buffer before execution
+        stdoutBuffer = '';
+        contingencyTable = [];
+        ariScore = null;
 
         console.log("Executing Check FCM...")
         checkFcmModule.callMain([inputFilename, groundTruthFilename, String(numClusters), String(fuzzifier)])
         console.log("Execution finished.")
-        ariTableText = stdoutBuffer; // Assign captured stdout to ariTableText
+        
+        rawAriOutput = stdoutBuffer;
+        parseAriOutput(stdoutBuffer);
 
         const resultMembershipFilename = `sFCM-Em${fuzzifier.toFixed(6)}-${inputFilename.split('.')[0]}.result_membership`
         const resultCentersFilename = `sFCM-Em${fuzzifier.toFixed(6)}-${inputFilename.split('.')[0]}.result_centers`
@@ -222,8 +264,41 @@
             </div>
 
             <div class="result-item">
-                <label for="ari-table-text">ARI Table (Standard Output):</label>
-                <textarea id="ari-table-text" readonly bind:value={ariTableText} rows="10"></textarea>
+                <h4>Clustering Evaluation</h4>
+                {#if ariScore !== null}
+                    <p><strong>Adjusted Rand Index (ARI):</strong> {ariScore.toFixed(6)}</p>
+                {/if}
+
+                {#if contingencyTable && contingencyTable.length > 0}
+                    <label for="contTable">Contingency Table:</label>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    {#each contingencyTable[0] as _, i}
+                                        <th>Predicted {i + 1}</th>
+                                    {/each}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {#each contingencyTable as row, i}
+                                    <tr>
+                                        <th>True {i + 1}</th>
+                                        {#each row as cell}
+                                            <td>{cell}</td>
+                                        {/each}
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
+                {/if}
+            </div>
+
+            <div class="result-item">
+                <label for="ari-raw-output">Raw Standard Output:</label>
+                <textarea id="ari-raw-output" readonly bind:value={rawAriOutput} rows="10"></textarea>
             </div>
 
         </div>
@@ -345,5 +420,30 @@
     .download-section button {
         width: auto;
         flex-shrink: 0;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: right;
+    }
+
+    th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+
+    tbody th {
+        text-align: left;
     }
 </style>
