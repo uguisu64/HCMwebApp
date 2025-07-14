@@ -275,16 +275,16 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th></th>
+                                    <th>ARI: {ariScore.toFixed(6)}</th>
                                     {#each contingencyTable[0] as _, i}
-                                        <th>Predicted {i + 1}</th>
+                                        <th>True {i + 1}</th>
                                     {/each}
                                 </tr>
                             </thead>
                             <tbody>
                                 {#each contingencyTable as row, i}
                                     <tr>
-                                        <th>True {i + 1}</th>
+                                        <th>Predict {i + 1}</th>
                                         {#each row as cell}
                                             <td>{cell}</td>
                                         {/each}
